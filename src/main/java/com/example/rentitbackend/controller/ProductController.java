@@ -6,7 +6,7 @@ import com.example.rentitbackend.dto.product.response.ProductListBySellerRespons
 import com.example.rentitbackend.entity.Member;
 import com.example.rentitbackend.entity.Product;
 import com.example.rentitbackend.entity.ProductImage;
-import com.example.rentitbackend.file.FileStore;
+//import com.example.rentitbackend.file.FileStore;
 import com.example.rentitbackend.security.UserAuthorize;
 import com.example.rentitbackend.service.MemberService;
 import com.example.rentitbackend.service.ProductService;
@@ -36,7 +36,7 @@ public class ProductController {
     private final MemberService memberService;
 
     @Autowired
-    public ProductController(FileStore fileStore, ProductService productService, MemberService memberService) {
+    public ProductController(ProductService productService, MemberService memberService) {
         this.productService = productService;
         this.memberService = memberService;
     }
