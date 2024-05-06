@@ -3,6 +3,7 @@ package com.example.rentitbackend.controller;
 import com.example.rentitbackend.dto.product.request.ProductRegisterRequest;
 import com.example.rentitbackend.dto.product.response.ProductDetailResponse;
 import com.example.rentitbackend.dto.product.response.ProductListBySellerResponse;
+import com.example.rentitbackend.dto.product.response.ProductListResponse;
 import com.example.rentitbackend.entity.Member;
 import com.example.rentitbackend.entity.Product;
 import com.example.rentitbackend.entity.ProductImage;
@@ -40,8 +41,20 @@ public class ProductController {
         this.productService = productService;
         this.memberService = memberService;
     }
-
-    //    @PostMapping(value="/register", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    private ResponseEntity<List<ProductListResponse>> getListResponseEntity(List<Product> productList) {
+        List<ProductListResponse> productResponseList = productList.stream().map(product -> {
+            ProductListResponse response = new ProductListResponse(
+                    product.getId(),
+                    product.getTitle(),
+                    product.getCategory(),
+                    product.getDuration(),
+                    product.getPrice(),
+                    product.getImages().stream().map(ProductImage::getStoreFileName).collect(Collectors.toList())
+            );
+            return response;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(productResponseList);
+    }
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @UserAuthorize
     public ResponseEntity<Product> registerProduct(@AuthenticationPrincipal User user, @ModelAttribute ProductRegisterRequest request) {
@@ -101,12 +114,21 @@ public class ProductController {
         }).collect(Collectors.toList());
         return ResponseEntity.ok(productResponseList);
     }
+
     @Operation(summary = "지역별 상품 목록 조회")
     @GetMapping("/location/{location}")
-    public ResponseEntity<List<Product>> getProductsByLocation(@PathVariable String location) {
-        List<Product> products = productService.getProductsByLocation(location);
-        return ResponseEntity.ok(products);
+    public ResponseEntity<List<ProductListResponse>> getProductsByLocation(@PathVariable String location) {
+        List<Product> productList = productService.getProductsByLocation(location);
+        return getListResponseEntity(productList);
     }
+
+    @Operation(summary = "한 지역 내 카테고리 별 상품 목록 조회")
+    @GetMapping("/location-category/{location}/{category}")
+    public ResponseEntity<List<ProductListResponse>> getProductsByLocationAndCategory(@PathVariable String location, @PathVariable String category) {
+        List<Product> productList = productService.getProductsByLocationAndCategory(location, category);
+        return getListResponseEntity(productList);
+    }
+
 
     @Operation(summary = "판매자 상품 목록 조회")
     @GetMapping("/seller/{nickname}")
@@ -129,7 +151,6 @@ public class ProductController {
             return response;
         }).collect(Collectors.toList());
         return ResponseEntity.ok(productResponseList);
-//        return ResponseEntity.ok(products);
     }
 
     @Operation(summary = "상품 상세 조회")
@@ -150,22 +171,6 @@ public class ProductController {
             );
             return ResponseEntity.ok(response);
         }).orElse(ResponseEntity.notFound().build());
-        //        Optional<Product> productOptional = productService.getProductById(id);
-//        return productOptional.map(product -> {
-//            List<String> imagePaths = product.getImages().stream()
-//                    .map(image -> Path.of(uploadDir, image.getStoreFileName()).toString())
-//                    .collect(Collectors.toList());
-//
-//            ProductDetailResponse response = new ProductDetailResponse(
-//                    product.getTitle(),
-//                    product.getCategory(),
-//                    product.getDuration(),
-//                    product.getPrice(),
-//                    product.getDescription(),
-//                    imagePaths
-//            );
-//            return ResponseEntity.ok(response);
-//        }).orElse(ResponseEntity.notFound().build());
     }
 
     @Operation(summary = "상품 검색 조회")
@@ -175,17 +180,6 @@ public class ProductController {
         return ResponseEntity.ok(products);
     }
 
-//    @DeleteMapping("/{id}")
-//    public ResponseEntity<String> deleteProduct(@PathVariable Long id) {
-//        try {
-//            productService.deleteProductWithImages(id);
-//            return ResponseEntity.ok().body("Product with ID " + id + " and its images have been deleted successfully.");
-//        } catch (IllegalArgumentException e) {
-//            return ResponseEntity.notFound().body(e.getMessage());
-//        } catch (Exception e) {
-//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("An error occurred while deleting the product: " + e.getMessage());
-//        }
-//    }
 
     @Operation(summary = "상품 삭제")
     @DeleteMapping("/{id}")

@@ -8,7 +8,9 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByLocation(String location);
+//    List<Product> findByLocation(String location);
+    List<Product> findAllByLocationOrderByCreatedAtDesc(String location);
+    List<Product> findAllByLocationAndCategoryOrderByCreatedAtDesc(String location, String category);
     List<Product> findBySeller(Member seller);
     List<Product> findByTitleContaining(String keyword);
 

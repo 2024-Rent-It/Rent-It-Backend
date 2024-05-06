@@ -71,7 +71,6 @@ public class ProductService {
 
     @Transactional
     public List<Product> getAllProducts() {
-//        return productRepository.findAll();
         return productRepository.findAllOrderedByCreatedAtDesc();
     }
 //    @Transactional
@@ -80,7 +79,14 @@ public class ProductService {
 //    }
     @Transactional
     public List<Product> getProductsByLocation(String location) {
-        return productRepository.findByLocation(location);
+
+//        return productRepository.findByLocation(location);
+        return productRepository.findAllByLocationOrderByCreatedAtDesc(location);
+    }
+
+    @Transactional
+    public List<Product> getProductsByLocationAndCategory(String location, String category) {
+        return productRepository.findAllByLocationAndCategoryOrderByCreatedAtDesc(location, category);
     }
 
     @Transactional

@@ -1,2 +1,6 @@
-package com.example.rentitbackend.dto.like.request;public record FavoriteRequest() {
+package com.example.rentitbackend.dto.like.request;
+
+public record FavoriteRequest(
+
+) {
 }
