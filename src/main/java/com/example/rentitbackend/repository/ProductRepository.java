@@ -16,4 +16,14 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     @Query("SELECT p FROM Product p ORDER BY p.createdAt DESC") // created_at 기준으로 내림차순 정렬
     List<Product> findAllOrderedByCreatedAtDesc();
+
+    List<Product> findAllByTitleContainingAndLocationOrderByCreatedAtDesc(String searchKeyword, String location);//최신순 검색
+
+    List<Product> findAllByTitleContainingAndLocationOrderByPriceDesc(String searchKeyword, String location); //고가순 검색
+
+    List<Product> findAllByTitleContainingAndLocationOrderByPriceAsc(String searchKeyword, String location); //저가순 검색
+
+    List<Product> findAllBySellerAndLocationOrderByCreatedAtDesc(Member seller, String location);
+
+
 }

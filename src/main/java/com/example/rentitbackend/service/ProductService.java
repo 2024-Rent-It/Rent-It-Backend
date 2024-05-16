@@ -69,6 +69,7 @@ public class ProductService {
     }
 
 
+
     @Transactional
     public List<Product> getAllProducts() {
         return productRepository.findAllOrderedByCreatedAtDesc();
@@ -99,9 +100,31 @@ public class ProductService {
         return productRepository.findById(id);
     }
 
+//    @Transactional
+//    public List<Product> searchProductsByKeyword(String keyword) {
+//        return productRepository.findByTitleContaining(keyword);
+//    }
+
     @Transactional
-    public List<Product> searchProductsByKeyword(String keyword) {
-        return productRepository.findByTitleContaining(keyword);
+    public List<Product> searchProductsByTitleAndLocation(String searchKeyword, String location) {
+        return productRepository.findAllByTitleContainingAndLocationOrderByCreatedAtDesc(searchKeyword, location);
+    }
+
+    @Transactional
+    public List<Product> searchProductsByTitleAndLocationOrderByPriceHighToLow(String searchKeyword, String location) {
+        return productRepository.findAllByTitleContainingAndLocationOrderByPriceDesc(searchKeyword, location);
+    }
+
+    @Transactional
+    public List<Product> searchProductsByTitleAndLocationOrderByPriceLowToHigh(String searchKeyword, String location) {
+        return productRepository.findAllByTitleContainingAndLocationOrderByPriceAsc(searchKeyword, location);
+    }
+
+    @Transactional
+    public List<Product> getProductsBySellerNicknameAndLocationOrderByCreatedAtDesc(String sellerNickname, String location) {
+        Member seller = memberRepository.findByNickname(sellerNickname)
+                .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 회원을 찾을 수 없습니다: " + sellerNickname));
+        return productRepository.findAllBySellerAndLocationOrderByCreatedAtDesc(seller, location);
     }
 
     @Transactional

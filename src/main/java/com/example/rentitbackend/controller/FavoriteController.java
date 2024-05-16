@@ -2,8 +2,6 @@ package com.example.rentitbackend.controller;
 
 import com.example.rentitbackend.dto.like.response.FavoriteResponse;
 import com.example.rentitbackend.entity.Favorite;
-import com.example.rentitbackend.entity.Member;
-import com.example.rentitbackend.entity.Product;
 import com.example.rentitbackend.security.UserAuthorize;
 import com.example.rentitbackend.service.FavoriteService;
 import com.example.rentitbackend.service.MemberService;
@@ -27,7 +25,6 @@ import java.util.UUID;
 public class FavoriteController {
 
     private final FavoriteService favoriteService;
-    private final MemberService memberService;
 
     @Operation(summary = "찜 추가")
     @PostMapping("/add")

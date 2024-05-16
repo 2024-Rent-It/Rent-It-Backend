@@ -62,38 +62,11 @@ public class ProductController {
         return new ResponseEntity<>(product, HttpStatus.CREATED);
     }
 
-
-//    @Operation(summary = "상품 목록 조회")
-//    @GetMapping
-//    public ResponseEntity<List<Product>> getAllProducts() {
-//        List<Product> products = productService.getAllProducts();
-//        return ResponseEntity.ok(products);
-//    }
-
-//    @Operation(summary = "상품 목록 조회")
-//    @GetMapping
-//    public ResponseEntity<Page<ProductDetailResponse>> getAllProducts(
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "9") int size
-//    ) {
-//        Pageable pageable = PageRequest.of(page, size);
-//        Page<Product> productPage = productService.getAllProducts(pageable);
-//        Page<ProductDetailResponse> productResponsePage = productPage.map(product -> {
-//            ProductDetailResponse response = new ProductDetailResponse(
-//                    product.getTitle(),
-//                    product.getCategory(),
-//                    product.getDuration(),
-//                    product.getPrice(),
-//                    product.getDescription(),
-//                    product.getImages().stream().map(ProductImage::getStoreFileName).collect(Collectors.toList()),
-//                    product.getSeller().getId(),
-//                    product.getSeller().getNickname(),
-//                    product.getLocation()
-//            );
-//            return response;
-//        });
-//        return ResponseEntity.ok(productResponsePage);
-//    }
+    @PutMapping("/{productId}")
+    public ResponseEntity<Product> updateProduct(@PathVariable Long productId, @RequestBody ProductRegisterRequest request) {
+        Product updatedProduct = productService.updateProduct(productId, request);
+        return ResponseEntity.ok(updatedProduct);
+    }
 
     @GetMapping
     public ResponseEntity<List<ProductDetailResponse>> getAllProducts() {
@@ -121,6 +94,33 @@ public class ProductController {
         List<Product> productList = productService.getProductsByLocation(location);
         return getListResponseEntity(productList);
     }
+    @Operation(summary = "지역 내 상품 검색 조회(최신 등록 순)")
+    @GetMapping("/search")
+    public ResponseEntity<List<ProductListResponse>> searchProductsByTitleAndLocation(@RequestParam String searchKeyword,
+                                                                                      @RequestParam String location) {
+        List<Product> productList = productService.searchProductsByTitleAndLocation(searchKeyword, location);
+        return getListResponseEntity(productList);
+    }
+
+    @Operation(summary = "지역 내 상품 고가순 검색 조회")
+    @GetMapping("/search/high-price")
+    public ResponseEntity<List<ProductListResponse>> searchProductsByTitleAndLocationOrderByPriceHighToLow(
+            @RequestParam String searchKeyword,
+            @RequestParam String location
+    ) {
+        List<Product> productList = productService.searchProductsByTitleAndLocationOrderByPriceHighToLow(searchKeyword, location);
+        return getListResponseEntity(productList);
+    }
+
+    @Operation(summary = "지역 내 상품 저가순 검색 조회")
+    @GetMapping("/search/low-price")
+    public ResponseEntity<List<ProductListResponse>> searchProductsByTitleAndLocationOrderByPriceLowToHigh(
+            @RequestParam String searchKeyword,
+            @RequestParam String location
+    ) {
+        List<Product> productList = productService.searchProductsByTitleAndLocationOrderByPriceLowToHigh(searchKeyword, location);
+        return getListResponseEntity(productList);
+    }
 
     @Operation(summary = "한 지역 내 카테고리 별 상품 목록 조회")
     @GetMapping("/location-category/{location}/{category}")
@@ -130,28 +130,38 @@ public class ProductController {
     }
 
 
-    @Operation(summary = "판매자 상품 목록 조회")
-    @GetMapping("/seller/{nickname}")
-    public ResponseEntity<List<ProductListBySellerResponse>> getProductsBySeller(@PathVariable String nickname) {
-        Member seller = memberService.findByNickname(nickname);
-        List<Product> products = productService.getProductsBySeller(seller);
-        List<ProductListBySellerResponse> productResponseList = products.stream().map(product -> {
-            ProductListBySellerResponse response = new ProductListBySellerResponse(
-                    product.getTitle(),
-                    product.getCategory(),
-                    product.getDuration(),
-                    product.getPrice(),
-                    product.getDescription(),
-                    product.getImages().stream().map(ProductImage::getStoreFileName).collect(Collectors.toList()),
-                    product.getSeller().getId(),
-                    product.getSeller().getNickname(),
-                    product.getLocation(),
-                    product.getStatus()
-            );
-            return response;
-        }).collect(Collectors.toList());
-        return ResponseEntity.ok(productResponseList);
+    @Operation(summary = "판매자의 상품 목록 조회 (최신순)")
+    @GetMapping("/seller")
+    public ResponseEntity<List<ProductListResponse>> getProductsBySellerNicknameAndLocationOrderByCreatedAtDesc(
+            @RequestParam String sellerNickname,
+            @RequestParam String location
+    ) {
+        List<Product> productList = productService.getProductsBySellerNicknameAndLocationOrderByCreatedAtDesc(sellerNickname, location);
+        return getListResponseEntity(productList);
     }
+
+//    @Operation(summary = "판매자 상품 목록 조회")
+//    @GetMapping("/seller/{nickname}")
+//    public ResponseEntity<List<ProductListBySellerResponse>> getProductsBySeller(@PathVariable String nickname) {
+//        Member seller = memberService.findByNickname(nickname);
+//        List<Product> products = productService.getProductsBySeller(seller);
+//        List<ProductListBySellerResponse> productResponseList = products.stream().map(product -> {
+//            ProductListBySellerResponse response = new ProductListBySellerResponse(
+//                    product.getTitle(),
+//                    product.getCategory(),
+//                    product.getDuration(),
+//                    product.getPrice(),
+//                    product.getDescription(),
+//                    product.getImages().stream().map(ProductImage::getStoreFileName).collect(Collectors.toList()),
+//                    product.getSeller().getId(),
+//                    product.getSeller().getNickname(),
+//                    product.getLocation(),
+//                    product.getStatus()
+//            );
+//            return response;
+//        }).collect(Collectors.toList());
+//        return ResponseEntity.ok(productResponseList);
+//    }
 
     @Operation(summary = "상품 상세 조회")
     @GetMapping("/{id}")
@@ -171,13 +181,6 @@ public class ProductController {
             );
             return ResponseEntity.ok(response);
         }).orElse(ResponseEntity.notFound().build());
-    }
-
-    @Operation(summary = "상품 검색 조회")
-    @GetMapping("/search")
-    public ResponseEntity<List<Product>> searchProductsByKeyword(@RequestParam String keyword) {
-        List<Product> products = productService.searchProductsByKeyword(keyword);
-        return ResponseEntity.ok(products);
     }
 
 
