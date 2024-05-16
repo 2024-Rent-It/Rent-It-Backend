@@ -1,6 +1,7 @@
 package com.example.rentitbackend.controller;
 
 import com.example.rentitbackend.dto.product.request.ProductRegisterRequest;
+import com.example.rentitbackend.dto.product.request.RentProductRequest;
 import com.example.rentitbackend.dto.product.response.ProductDetailResponse;
 import com.example.rentitbackend.dto.product.response.ProductListBySellerResponse;
 import com.example.rentitbackend.dto.product.response.ProductListResponse;
@@ -162,6 +163,34 @@ public class ProductController {
 //        }).collect(Collectors.toList());
 //        return ResponseEntity.ok(productResponseList);
 //    }
+    @Operation(summary = "판매자 상품 목록 조회2")
+    @GetMapping("/seller/{nickname}")
+    public ResponseEntity<List<ProductListBySellerResponse>> getProductsBySeller(@PathVariable String nickname) {
+        Member seller = memberService.findByNickname(nickname);
+        List<Product> products = productService.getProductsBySeller(seller);
+        List<ProductListBySellerResponse> productResponseList = products.stream().map(product -> {
+            ProductListBySellerResponse response = new ProductListBySellerResponse(
+                    product.getId(),
+                    product.getTitle(),
+                    product.getCategory(),
+                    product.getDuration(),
+                    product.getPrice(),
+                    product.getDescription(),
+                    product.getImages().stream().map(ProductImage::getStoreFileName).collect(Collectors.toList()),
+                    product.getSeller().getId(),
+                    product.getSeller().getNickname(),
+                    product.getLocation(),
+                    product.getStatus(),
+                    product.getBuyer() != null ? product.getBuyer().getNickname() : "", // 구매자가 null인 경우 처리
+                    product.getStartDate() != null ? product.getStartDate() : null, // 시작일자가 null인 경우 처리
+                    product.getEndDate() != null ? product.getEndDate() : null // 종료일자가 null인 경우 처리
+            );
+            return response;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(productResponseList);
+    }
+
+
 
     @Operation(summary = "상품 상세 조회")
     @GetMapping("/{id}")
@@ -189,6 +218,47 @@ public class ProductController {
     public ResponseEntity<Void> deleteProduct(@PathVariable Long id) {
         productService.deleteProductWithImages(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "렌트 가능 -> 렌트 중으로 상태 변경")
+    @PostMapping("/{productId}/rent")
+    public ResponseEntity<String> rentProduct(@PathVariable Long productId, @RequestBody RentProductRequest request) {
+        try {
+            productService.rentProduct(productId, request);
+            return ResponseEntity.ok("상품이 성공적으로 렌트되었습니다.");
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "렌트 완료로 상태 변경")
+    @PutMapping("/{productId}/complete-rent")
+    public ResponseEntity<String> completeRent(@PathVariable Long productId) {
+        try {
+            productService.completeRent(productId);
+            return ResponseEntity.ok("상품이 성공적으로 렌트 완료 처리되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+    @Operation(summary = "렌트 가능으로 상태 변경")
+    @PutMapping("/{productId}/rent-available")
+    public ResponseEntity<String> rentAvailable(@PathVariable Long productId) {
+        try {
+            productService.rentAvailable(productId);
+            return ResponseEntity.ok("상품이 성공적으로 렌트 가능 처리되었습니다.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }
+
+
+
+    @PostMapping("/update-all-status-available")
+    public ResponseEntity<String> updateAllProductStatusToRentAvailable() {
+        productService.updateAllProductStatusToRentAvailable();
+        return ResponseEntity.ok("모든 상품의 상태를 '렌트가능'으로 변경하였습니다.");
     }
 }
 

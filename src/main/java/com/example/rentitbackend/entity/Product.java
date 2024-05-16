@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -61,6 +62,13 @@ public class Product {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private DealStatus status = DealStatus.거래가능;
+    private DealStatus status = DealStatus.렌트가능;
+
+    private LocalDateTime startDate;
+
+
+    private LocalDateTime endDate;
+
+
 
 }

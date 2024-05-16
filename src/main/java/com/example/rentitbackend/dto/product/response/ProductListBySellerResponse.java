@@ -3,10 +3,13 @@ package com.example.rentitbackend.dto.product.response;
 import com.example.rentitbackend.common.DealStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
 public record ProductListBySellerResponse(
+        @Schema(description = "상품아이디", example = "1")
+        Long id,
         @Schema(description = "상품명", example = "아이폰14")
         String title,
         @Schema(description = "카테고리", example = "디지털기기")
@@ -26,6 +29,10 @@ public record ProductListBySellerResponse(
         @Schema(description = "상품 등록 위치", example = "시흥시")
         String Location,
         @Schema(description = "거래 상태", example = "시흥시")
-        DealStatus status
+        DealStatus status,
+
+        String buyerName,
+        LocalDateTime startDate,
+        LocalDateTime endDate
 ) {
 }

@@ -2,6 +2,7 @@ package com.example.rentitbackend.repository;
 
 import com.example.rentitbackend.entity.Favorite;
 import com.example.rentitbackend.entity.Member;
+import com.example.rentitbackend.entity.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -21,4 +22,6 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     boolean existsByMemberNicknameAndProductId(String memberNickname, Long productId);
 
     Favorite findByMemberIdAndProductId(UUID memberId, Long productId);
+
+    List<Favorite> findByProduct(Product product);
 }
