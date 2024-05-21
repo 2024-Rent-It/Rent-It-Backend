@@ -2,6 +2,7 @@ package com.example.rentitbackend.service;
 
 import com.example.rentitbackend.common.DealStatus;
 import com.example.rentitbackend.dto.product.request.ProductRegisterRequest;
+import com.example.rentitbackend.dto.product.request.ProductUpdateRequest;
 import com.example.rentitbackend.dto.product.request.RentProductRequest;
 import com.example.rentitbackend.entity.*;
 import com.example.rentitbackend.repository.FavoriteRepository;
@@ -96,6 +97,11 @@ public class ProductService {
     }
 
     @Transactional
+    public List<Product> getProductsByBuyer(Member buyer) {
+        return productRepository.findByBuyer(buyer);
+    }
+
+    @Transactional
     public Optional<Product> getProductById(Long id) {
         return productRepository.findById(id);
     }
@@ -127,23 +133,58 @@ public class ProductService {
         return productRepository.findAllBySellerAndLocationOrderByCreatedAtDesc(seller, location);
     }
 
-    @Transactional
-    public Product updateProduct(Long productId, ProductRegisterRequest request) {
-        // 업데이트할 상품을 찾음
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
+//    @Transactional
+//    public Product updateProduct(Long productId, ProductRegisterRequest request) {
+//        // 업데이트할 상품을 찾음
+//        Product product = productRepository.findById(productId)
+//                .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
+//
+//        product.setTitle(request.title());
+//        product.setCategory(request.category());
+//        product.setDuration(request.duration());
+//        product.setPrice(request.price());
+//        product.setDescription(request.description());
+//
+//        List<ProductImage> existingImages = product.getImages();
+//        for (ProductImage existingImage : existingImages) {
+//            productImageRepository.delete(existingImage);
+//        }
+//
+//        for (MultipartFile file : request.images()) {
+//            ProductImage productImage = new ProductImage();
+//            productImage.setUploadFileName(file.getOriginalFilename());
+//            productImage.setStoreFileName(productImageService.saveImage(file));
+//            productImage.setProduct(product);
+//            productImageRepository.save(productImage);
+//            product.getImages().add(productImage);
+//        }
+//        product.setUpdatedAt(LocalDateTime.now());
+//
+//        return productRepository.save(product);
+//    }
+@Transactional
+public Product updateProduct(Long productId, ProductUpdateRequest request) {
+    // 업데이트할 상품을 찾음
+    Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
 
-        product.setTitle(request.title());
-        product.setCategory(request.category());
-        product.setDuration(request.duration());
-        product.setPrice(request.price());
-        product.setDescription(request.description());
+    product.setTitle(request.title());
+    product.setCategory(request.category());
+    product.setDuration(request.duration());
+    product.setPrice(request.price());
+    product.setDescription(request.description());
 
-        List<ProductImage> existingImages = product.getImages();
-        for (ProductImage existingImage : existingImages) {
-            productImageRepository.delete(existingImage);
+    // 삭제할 이미지 처리
+    if (request.deletedImages() != null && !request.deletedImages().isEmpty()) {
+        for (Long imageId : request.deletedImages()) {
+            ProductImage productImage = productImageRepository.findById(imageId)
+                    .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 이미지를 찾을 수 없습니다: " + imageId));
+            productImageRepository.delete(productImage);
         }
+    }
 
+    // 새로운 이미지 추가
+    if (request.images() != null && !request.images().isEmpty()) {
         for (MultipartFile file : request.images()) {
             ProductImage productImage = new ProductImage();
             productImage.setUploadFileName(file.getOriginalFilename());
@@ -152,10 +193,11 @@ public class ProductService {
             productImageRepository.save(productImage);
             product.getImages().add(productImage);
         }
-        product.setUpdatedAt(LocalDateTime.now());
-
-        return productRepository.save(product);
     }
+
+    product.setUpdatedAt(LocalDateTime.now());
+    return productRepository.save(product);
+}
 
     @Transactional
     public void deleteProductWithImages(Long productId) {

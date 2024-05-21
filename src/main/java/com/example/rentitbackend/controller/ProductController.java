@@ -1,8 +1,10 @@
 package com.example.rentitbackend.controller;
 
 import com.example.rentitbackend.dto.product.request.ProductRegisterRequest;
+import com.example.rentitbackend.dto.product.request.ProductUpdateRequest;
 import com.example.rentitbackend.dto.product.request.RentProductRequest;
 import com.example.rentitbackend.dto.product.response.ProductDetailResponse;
+import com.example.rentitbackend.dto.product.response.ProductListByBuyerResponse;
 import com.example.rentitbackend.dto.product.response.ProductListBySellerResponse;
 import com.example.rentitbackend.dto.product.response.ProductListResponse;
 import com.example.rentitbackend.entity.Member;
@@ -42,6 +44,7 @@ public class ProductController {
         this.productService = productService;
         this.memberService = memberService;
     }
+
     private ResponseEntity<List<ProductListResponse>> getListResponseEntity(List<Product> productList) {
         List<ProductListResponse> productResponseList = productList.stream().map(product -> {
             ProductListResponse response = new ProductListResponse(
@@ -56,6 +59,7 @@ public class ProductController {
         }).collect(Collectors.toList());
         return ResponseEntity.ok(productResponseList);
     }
+
     @PostMapping(value = "/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     @UserAuthorize
     public ResponseEntity<Product> registerProduct(@AuthenticationPrincipal User user, @ModelAttribute ProductRegisterRequest request) {
@@ -63,11 +67,20 @@ public class ProductController {
         return new ResponseEntity<>(product, HttpStatus.CREATED);
     }
 
+    //    @PutMapping(value ="/{productId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+//    public ResponseEntity<Product> updateProduct(@AuthenticationPrincipal User user, @PathVariable Long productId,
+//                                                 @ModelAttribute ProductUpdateRequest request) {
+//        Product updatedProduct = productService.updateProduct(productId, request);
+//        return ResponseEntity.ok(updatedProduct);
+//    }
     @PutMapping("/{productId}")
-    public ResponseEntity<Product> updateProduct(@PathVariable Long productId, @RequestBody ProductRegisterRequest request) {
+    public ResponseEntity<Product> updateProduct(
+            @PathVariable Long productId,
+            @ModelAttribute ProductUpdateRequest request) {
         Product updatedProduct = productService.updateProduct(productId, request);
         return ResponseEntity.ok(updatedProduct);
     }
+
 
     @GetMapping
     public ResponseEntity<List<ProductDetailResponse>> getAllProducts() {
@@ -95,6 +108,7 @@ public class ProductController {
         List<Product> productList = productService.getProductsByLocation(location);
         return getListResponseEntity(productList);
     }
+
     @Operation(summary = "지역 내 상품 검색 조회(최신 등록 순)")
     @GetMapping("/search")
     public ResponseEntity<List<ProductListResponse>> searchProductsByTitleAndLocation(@RequestParam String searchKeyword,
@@ -131,7 +145,7 @@ public class ProductController {
     }
 
 
-    @Operation(summary = "판매자의 상품 목록 조회 (최신순)")
+    @Operation(summary = "판매자의 상품 목록 조회 (최신순, 지역별)")
     @GetMapping("/seller")
     public ResponseEntity<List<ProductListResponse>> getProductsBySellerNicknameAndLocationOrderByCreatedAtDesc(
             @RequestParam String sellerNickname,
@@ -141,7 +155,7 @@ public class ProductController {
         return getListResponseEntity(productList);
     }
 
-//    @Operation(summary = "판매자 상품 목록 조회")
+    //    @Operation(summary = "판매자 상품 목록 조회")
 //    @GetMapping("/seller/{nickname}")
 //    public ResponseEntity<List<ProductListBySellerResponse>> getProductsBySeller(@PathVariable String nickname) {
 //        Member seller = memberService.findByNickname(nickname);
@@ -163,7 +177,7 @@ public class ProductController {
 //        }).collect(Collectors.toList());
 //        return ResponseEntity.ok(productResponseList);
 //    }
-    @Operation(summary = "판매자 상품 목록 조회2")
+    @Operation(summary = "판매자 상품 목록 조회(전체)")
     @GetMapping("/seller/{nickname}")
     public ResponseEntity<List<ProductListBySellerResponse>> getProductsBySeller(@PathVariable String nickname) {
         Member seller = memberService.findByNickname(nickname);
@@ -190,6 +204,32 @@ public class ProductController {
         return ResponseEntity.ok(productResponseList);
     }
 
+    @Operation(summary = "구매자 상품 목록 조회")
+    @GetMapping("/buyer/{nickname}")
+    public ResponseEntity<List<ProductListByBuyerResponse>> getProductsByBuyer(@PathVariable String nickname) {
+        Member buyer = memberService.findByNickname(nickname);
+        List<Product> products = productService.getProductsByBuyer(buyer);
+        List<ProductListByBuyerResponse> productResponseList = products.stream().map(product -> {
+            ProductListByBuyerResponse response = new ProductListByBuyerResponse(
+                    product.getId(),
+                    product.getTitle(),
+                    product.getCategory(),
+                    product.getDuration(),
+                    product.getPrice(),
+                    product.getDescription(),
+                    product.getImages().stream().map(image -> image.getStoreFileName()).collect(Collectors.toList()),
+                    UUID.fromString(product.getSeller().getId().toString()),
+                    product.getSeller().getNickname(),
+                    product.getLocation(),
+                    product.getStatus(),
+                    product.getBuyer() != null ? product.getBuyer().getNickname() : "", // 구매자가 null인 경우 처리
+                    product.getStartDate() != null ? product.getStartDate() : null, // 시작일자가 null인 경우 처리
+                    product.getEndDate() != null ? product.getEndDate() : null // 종료일자가 null인 경우 처리
+            );
+            return response;
+        }).collect(Collectors.toList());
+        return ResponseEntity.ok(productResponseList);
+    }
 
 
     @Operation(summary = "상품 상세 조회")
@@ -252,7 +292,6 @@ public class ProductController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
         }
     }
-
 
 
     @PostMapping("/update-all-status-available")

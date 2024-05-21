@@ -1,7 +1,9 @@
 package com.example.rentitbackend.service;
 
-import com.example.rentitbackend.entity.Keyword;
-import com.example.rentitbackend.entity.Member;
+import com.example.rentitbackend.dto.like.KeywordResponse;
+import com.example.rentitbackend.dto.like.response.FavoriteResponse;
+import com.example.rentitbackend.dto.product.response.ProductListResponse;
+import com.example.rentitbackend.entity.*;
 import com.example.rentitbackend.repository.KeywordRepository;
 import com.example.rentitbackend.repository.MemberRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -10,7 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class KeywordService {
@@ -38,4 +42,16 @@ public class KeywordService {
     public void deleteKeyword(Long keywordId) {
         keywordRepository.deleteById(keywordId);
     }
+
+    public List<KeywordResponse> getKeywordsByMemberNickname(String nickname) {
+        Member member = memberRepository.findByNickname(nickname)
+                .orElseThrow(() -> new RuntimeException("Member not found"));
+
+        List<Keyword> keywords = keywordRepository.findByMember(member);
+
+        return keywords.stream()
+                .map(keyword -> new KeywordResponse(keyword.getId(), keyword.getName(), keyword.getCreatedAt()))
+                .collect(Collectors.toList());
+    }
+
 }

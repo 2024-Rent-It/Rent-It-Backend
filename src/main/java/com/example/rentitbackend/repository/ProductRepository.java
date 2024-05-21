@@ -12,6 +12,8 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findAllByLocationOrderByCreatedAtDesc(String location);
     List<Product> findAllByLocationAndCategoryOrderByCreatedAtDesc(String location, String category);
     List<Product> findBySeller(Member seller);
+
+    List<Product> findByBuyer(Member buyer);
     List<Product> findByTitleContaining(String keyword);
 
     @Query("SELECT p FROM Product p ORDER BY p.createdAt DESC") // created_at 기준으로 내림차순 정렬
