@@ -5,20 +5,19 @@ import com.example.rentitbackend.dto.product.request.ProductRegisterRequest;
 import com.example.rentitbackend.dto.product.request.ProductUpdateRequest;
 import com.example.rentitbackend.dto.product.request.RentProductRequest;
 import com.example.rentitbackend.entity.*;
-import com.example.rentitbackend.repository.FavoriteRepository;
-import com.example.rentitbackend.repository.MemberRepository;
-import com.example.rentitbackend.repository.ProductImageRepository;
-import com.example.rentitbackend.repository.ProductRepository;
+import com.example.rentitbackend.repository.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class ProductService {
@@ -26,13 +25,15 @@ public class ProductService {
     private final ProductImageRepository productImageRepository;
     private final MemberRepository memberRepository;
     private final FavoriteRepository favoriteRepository;
+    private final KeywordRepository keywordRepository;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, ProductImageRepository productImageRepository, MemberRepository memberRepository, FavoriteRepository favoriteRepository) {
+    public ProductService(ProductRepository productRepository, ProductImageRepository productImageRepository, MemberRepository memberRepository, FavoriteRepository favoriteRepository, KeywordRepository keywordRepository) {
         this.productRepository = productRepository;
         this.productImageRepository = productImageRepository;
         this.memberRepository = memberRepository;
         this.favoriteRepository = favoriteRepository;
+        this.keywordRepository = keywordRepository;
     }
 
     @Autowired
@@ -66,7 +67,65 @@ public class ProductService {
 
             product.getImages().add(productImage);
         }
+
+        // 키워드 기반 푸시 알림 전송
+        sendKeywordPushNotifications(product.getTitle());
+
         return productRepository.save(product);
+    }
+
+    private void sendKeywordPushNotifications(String productName) {
+        List<Keyword> matchingKeywords = keywordRepository.findAll()
+                .stream()
+                .filter(keyword -> productName.contains(keyword.getName()))
+                .collect(Collectors.toList());
+        List<String> tokens = matchingKeywords.stream()
+                .flatMap(keyword -> keyword.getMember().getTokens().stream())
+                .map(Token::getToken)
+                .collect(Collectors.toList());
+
+        if (!tokens.isEmpty()) {
+            sendPushNotification(tokens, productName);
+        }
+    }
+
+    private void sendPushNotification(List<String> tokens, String productName) {
+        String url = "https://exp.host/--/api/v2/push/send";
+        RestTemplate restTemplate = new RestTemplate();
+
+        List<PushMessage> messages = tokens.stream()
+                .map(token -> new PushMessage(token, productName))
+                .collect(Collectors.toList());
+
+        restTemplate.postForEntity(url, messages, String.class);
+    }
+
+    private static class PushMessage {
+        private final String to;
+        private final String sound = "default";
+        private final String title = "키워드 알림 도착!";
+        private final String body;
+
+        public PushMessage(String to, String productName) {
+            this.to = to;
+            this.body = String.format("알림 등록한 상품 '%s' 신규 등록!", productName.isEmpty() ? "기본 상품명" : productName);
+        }
+
+        public String getTo() {
+            return to;
+        }
+
+        public String getSound() {
+            return sound;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getBody() {
+            return body;
+        }
     }
 
 

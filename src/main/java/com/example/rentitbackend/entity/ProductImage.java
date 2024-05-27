@@ -19,7 +19,7 @@ public class ProductImage {
 
     private String storeFileName;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JoinColumn(name = "product_id")
     @JsonIgnore
     private Product product;

@@ -9,4 +9,5 @@ import java.util.List;
 
 public interface KeywordRepository extends JpaRepository<Keyword, Long> {
     List<Keyword> findByMember(Member member);
+    List<Keyword> findByName(String keywordName);
 }

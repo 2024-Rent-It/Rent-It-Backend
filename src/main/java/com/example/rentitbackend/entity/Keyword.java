@@ -26,10 +26,7 @@ public class Keyword {
     private LocalDateTime createdAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "member_id")
     @JsonIgnore
     private Member member;
-
-
-
 }

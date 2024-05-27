@@ -47,6 +47,12 @@ public class Member {
     @OneToMany(mappedBy = "buyer")
     private List<Product> buyingProducts;
 
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Keyword> keywords;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Token> tokens;
+
 
 
 
