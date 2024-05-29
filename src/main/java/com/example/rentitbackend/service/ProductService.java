@@ -26,14 +26,16 @@ public class ProductService {
     private final MemberRepository memberRepository;
     private final FavoriteRepository favoriteRepository;
     private final KeywordRepository keywordRepository;
+    private final KeywordNotificationRepository keywordNotificationRepository;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, ProductImageRepository productImageRepository, MemberRepository memberRepository, FavoriteRepository favoriteRepository, KeywordRepository keywordRepository) {
+    public ProductService(ProductRepository productRepository, ProductImageRepository productImageRepository, MemberRepository memberRepository, FavoriteRepository favoriteRepository, KeywordRepository keywordRepository, KeywordNotificationRepository keywordNotificationRepository) {
         this.productRepository = productRepository;
         this.productImageRepository = productImageRepository;
         this.memberRepository = memberRepository;
         this.favoriteRepository = favoriteRepository;
         this.keywordRepository = keywordRepository;
+        this.keywordNotificationRepository = keywordNotificationRepository;
     }
 
     @Autowired
@@ -69,15 +71,15 @@ public class ProductService {
         }
 
         // 키워드 기반 푸시 알림 전송
-        sendKeywordPushNotifications(product.getTitle());
+        sendKeywordPushNotifications(product);
 
         return productRepository.save(product);
     }
 
-    private void sendKeywordPushNotifications(String productName) {
+    private void sendKeywordPushNotifications(Product product) {
         List<Keyword> matchingKeywords = keywordRepository.findAll()
                 .stream()
-                .filter(keyword -> productName.contains(keyword.getName()))
+                .filter(keyword -> product.getTitle().contains(keyword.getName()))
                 .collect(Collectors.toList());
         List<String> tokens = matchingKeywords.stream()
                 .flatMap(keyword -> keyword.getMember().getTokens().stream())
@@ -85,7 +87,19 @@ public class ProductService {
                 .collect(Collectors.toList());
 
         if (!tokens.isEmpty()) {
-            sendPushNotification(tokens, productName);
+            sendPushNotification(tokens, product.getTitle());
+        }
+
+        // 알림 정보 저장
+        for (Keyword keyword : matchingKeywords) {
+            KeywordNotification notification = new KeywordNotification();
+            notification.setMember(keyword.getMember());
+            notification.setType("키워드 알람");
+            notification.setMessage(String.format("\"%s\" 상품이 등록되었습니다! 확인하러 가 볼까요?", keyword.getName()));
+            notification.setProductId(product.getId());
+            notification.setKeyword(keyword.getName());
+            notification.setCreatedAt(LocalDateTime.now());
+            keywordNotificationRepository.save(notification);
         }
     }
 
