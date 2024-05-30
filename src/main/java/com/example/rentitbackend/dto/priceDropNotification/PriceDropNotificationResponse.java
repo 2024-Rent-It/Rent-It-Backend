@@ -1,13 +1,13 @@
-package com.example.rentitbackend.dto.keywordnofification;
+package com.example.rentitbackend.dto.priceDropNotification;
 
 import java.time.LocalDateTime;
 
-public record KeywordNotificationResponse(
+public record PriceDropNotificationResponse(
         Long id,
         String type,
         String message,
         Long productId,
-        String keyword,
+        int priceDropAmount,
         LocalDateTime createdAt
 ) {
 }

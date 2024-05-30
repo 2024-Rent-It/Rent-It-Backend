@@ -28,15 +28,17 @@ public class ProductService {
     private final FavoriteRepository favoriteRepository;
     private final KeywordRepository keywordRepository;
     private final KeywordNotificationRepository keywordNotificationRepository;
+    private final PriceDropNotificationRepository priceDropNotificationRepository;
 
     @Autowired
-    public ProductService(ProductRepository productRepository, ProductImageRepository productImageRepository, MemberRepository memberRepository, FavoriteRepository favoriteRepository, KeywordRepository keywordRepository, KeywordNotificationRepository keywordNotificationRepository) {
+    public ProductService(ProductRepository productRepository, ProductImageRepository productImageRepository, MemberRepository memberRepository, FavoriteRepository favoriteRepository, KeywordRepository keywordRepository, KeywordNotificationRepository keywordNotificationRepository, PriceDropNotificationRepository priceDropNotificationRepository) {
         this.productRepository = productRepository;
         this.productImageRepository = productImageRepository;
         this.memberRepository = memberRepository;
         this.favoriteRepository = favoriteRepository;
         this.keywordRepository = keywordRepository;
         this.keywordNotificationRepository = keywordNotificationRepository;
+        this.priceDropNotificationRepository = priceDropNotificationRepository;
     }
 
     @Autowired
@@ -207,76 +209,14 @@ public class ProductService {
         return productRepository.findAllBySellerAndLocationOrderByCreatedAtDesc(seller, location);
     }
 
-    //    @Transactional
-//    public Product updateProduct(Long productId, ProductRegisterRequest request) {
-//        // 업데이트할 상품을 찾음
-//        Product product = productRepository.findById(productId)
-//                .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
-//
-//        product.setTitle(request.title());
-//        product.setCategory(request.category());
-//        product.setDuration(request.duration());
-//        product.setPrice(request.price());
-//        product.setDescription(request.description());
-//
-//        List<ProductImage> existingImages = product.getImages();
-//        for (ProductImage existingImage : existingImages) {
-//            productImageRepository.delete(existingImage);
-//        }
-//
-//        for (MultipartFile file : request.images()) {
-//            ProductImage productImage = new ProductImage();
-//            productImage.setUploadFileName(file.getOriginalFilename());
-//            productImage.setStoreFileName(productImageService.saveImage(file));
-//            productImage.setProduct(product);
-//            productImageRepository.save(productImage);
-//            product.getImages().add(productImage);
-//        }
-//        product.setUpdatedAt(LocalDateTime.now());
-//
-//        return productRepository.save(product);
-//    }
-//@Transactional
-//public Product updateProduct(Long productId, ProductUpdateRequest request) {
-//    // 업데이트할 상품을 찾음
-//    Product product = productRepository.findById(productId)
-//            .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
-//
-//    product.setTitle(request.title());
-//    product.setCategory(request.category());
-//    product.setDuration(request.duration());
-//    product.setPrice(request.price());
-//    product.setDescription(request.description());
-//
-//    // 삭제할 이미지 처리
-//    if (request.deletedImages() != null && !request.deletedImages().isEmpty()) {
-//        for (Long imageId : request.deletedImages()) {
-//            ProductImage productImage = productImageRepository.findById(imageId)
-//                    .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 이미지를 찾을 수 없습니다: " + imageId));
-//            productImageRepository.delete(productImage);
-//        }
-//    }
-//
-//    // 새로운 이미지 추가
-//    if (request.images() != null && !request.images().isEmpty()) {
-//        for (MultipartFile file : request.images()) {
-//            ProductImage productImage = new ProductImage();
-//            productImage.setUploadFileName(file.getOriginalFilename());
-//            productImage.setStoreFileName(productImageService.saveImage(file));
-//            productImage.setProduct(product);
-//            productImageRepository.save(productImage);
-//            product.getImages().add(productImage);
-//        }
-//    }
-//
-//    product.setUpdatedAt(LocalDateTime.now());
-//    return productRepository.save(product);
-//}
     @Transactional
     public Product updateProduct(Long productId, ProductUpdateRequest request) {
         // 업데이트할 상품을 찾음
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
+
+        // 이전 가격 저장
+        int previousPrice = product.getPrice();
 
         // 상품의 필드 업데이트
         product.setTitle(request.title());
@@ -306,11 +246,86 @@ public class ProductService {
             }
         }
 
+        // 가격이 떨어졌는지 확인
+        if (previousPrice > request.price()) {
+            sendPriceDropNotifications(product, previousPrice, request.price());
+        }
+
         // 변경된 내용 저장
         product.setUpdatedAt(LocalDateTime.now());
         return productRepository.save(product);
     }
 
+    private void sendPriceDropNotifications(Product product, int previousPrice, int newPrice) {
+        // 상품을 찜한 회원 조회
+        List<Member> interestedMembers = favoriteRepository.findByProductId(product.getId())
+                .stream()
+                .map(Favorite::getMember)
+                .collect(Collectors.toList());
+
+        List<String> tokens = interestedMembers.stream()
+                .flatMap(member -> member.getTokens().stream())
+                .map(Token::getToken)
+                .collect(Collectors.toList());
+
+        if (!tokens.isEmpty()) {
+            sendPriceDropPushNotifications(tokens, product.getTitle(), previousPrice, newPrice);
+        }
+
+        // 알림 정보 저장
+        for (Member member : interestedMembers) {
+            PriceDropNotification notification = new PriceDropNotification();
+            notification.setMember(member);
+            notification.setType("가격 하락 알람");
+            notification.setMessage(String.format("찜한 상품 \"%s\"의 가격이 %d원에서 %d원으로 떨어졌습니다!", product.getTitle(), previousPrice, newPrice));
+            notification.setProductId(product.getId());
+            notification.setCreatedAt(LocalDateTime.now());
+            notification.setPriceDropAmount(previousPrice-newPrice);
+            priceDropNotificationRepository.save(notification);
+        }
+    }
+    private void sendPriceDropPushNotifications(List<String> tokens, String productName, int previousPrice, int newPrice) {
+        int priceDropAmount = previousPrice - newPrice;
+        String url = "https://exp.host/--/api/v2/push/send";
+        RestTemplate restTemplate = new RestTemplate();
+
+        List<PriceDropPushMessage> messages = tokens.stream()
+                .map(token -> new PriceDropPushMessage(token, productName, previousPrice, newPrice, priceDropAmount))
+                .collect(Collectors.toList());
+
+        restTemplate.postForEntity(url, messages, String.class);
+    }
+
+    private static class PriceDropPushMessage {
+        private final String to;
+        private final String sound = "default";
+        private final String title = "가격 하락 알림 도착!";
+        private final String body;
+
+        private final int priceDropAmount; // 가격 하락량 필드 추가
+
+        public PriceDropPushMessage(String to, String productName, int previousPrice, int newPrice, int priceDropAmount) {
+            this.to = to;
+            this.priceDropAmount = priceDropAmount;
+            this.body = String.format("찜한 상품 '%s'의 가격이 %d원에서 %d원으로 %d원 만큼 떨어졌습니다!", productName.isEmpty() ? "기본 상품명" : productName, previousPrice, newPrice, this.priceDropAmount);
+        }
+
+        public String getTo() {
+            return to;
+        }
+
+        public String getSound() {
+            return sound;
+        }
+
+        public String getTitle() {
+            return title;
+        }
+
+        public String getBody() {
+            return body;
+        }
+    }
     @Transactional
     public void deleteProductWithImages(Long productId) {
         // Product 엔터티 조회
