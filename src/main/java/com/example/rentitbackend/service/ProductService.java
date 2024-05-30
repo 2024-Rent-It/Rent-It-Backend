@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -143,12 +144,12 @@ public class ProductService {
     }
 
 
-
     @Transactional
     public List<Product> getAllProducts() {
         return productRepository.findAllOrderedByCreatedAtDesc();
     }
-//    @Transactional
+
+    //    @Transactional
 //    public Page<Product> getAllProducts(Pageable pageable) {
 //        return productRepository.findAll(pageable);
 //    }
@@ -206,7 +207,7 @@ public class ProductService {
         return productRepository.findAllBySellerAndLocationOrderByCreatedAtDesc(seller, location);
     }
 
-//    @Transactional
+    //    @Transactional
 //    public Product updateProduct(Long productId, ProductRegisterRequest request) {
 //        // 업데이트할 상품을 찾음
 //        Product product = productRepository.findById(productId)
@@ -235,42 +236,80 @@ public class ProductService {
 //
 //        return productRepository.save(product);
 //    }
-@Transactional
-public Product updateProduct(Long productId, ProductUpdateRequest request) {
-    // 업데이트할 상품을 찾음
-    Product product = productRepository.findById(productId)
-            .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
+//@Transactional
+//public Product updateProduct(Long productId, ProductUpdateRequest request) {
+//    // 업데이트할 상품을 찾음
+//    Product product = productRepository.findById(productId)
+//            .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
+//
+//    product.setTitle(request.title());
+//    product.setCategory(request.category());
+//    product.setDuration(request.duration());
+//    product.setPrice(request.price());
+//    product.setDescription(request.description());
+//
+//    // 삭제할 이미지 처리
+//    if (request.deletedImages() != null && !request.deletedImages().isEmpty()) {
+//        for (Long imageId : request.deletedImages()) {
+//            ProductImage productImage = productImageRepository.findById(imageId)
+//                    .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 이미지를 찾을 수 없습니다: " + imageId));
+//            productImageRepository.delete(productImage);
+//        }
+//    }
+//
+//    // 새로운 이미지 추가
+//    if (request.images() != null && !request.images().isEmpty()) {
+//        for (MultipartFile file : request.images()) {
+//            ProductImage productImage = new ProductImage();
+//            productImage.setUploadFileName(file.getOriginalFilename());
+//            productImage.setStoreFileName(productImageService.saveImage(file));
+//            productImage.setProduct(product);
+//            productImageRepository.save(productImage);
+//            product.getImages().add(productImage);
+//        }
+//    }
+//
+//    product.setUpdatedAt(LocalDateTime.now());
+//    return productRepository.save(product);
+//}
+    @Transactional
+    public Product updateProduct(Long productId, ProductUpdateRequest request) {
+        // 업데이트할 상품을 찾음
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 상품을 찾을 수 없습니다: " + productId));
 
-    product.setTitle(request.title());
-    product.setCategory(request.category());
-    product.setDuration(request.duration());
-    product.setPrice(request.price());
-    product.setDescription(request.description());
+        // 상품의 필드 업데이트
+        product.setTitle(request.title());
+        product.setCategory(request.category());
+        product.setDuration(request.duration());
+        product.setPrice(request.price());
+        product.setDescription(request.description());
 
-    // 삭제할 이미지 처리
-    if (request.deletedImages() != null && !request.deletedImages().isEmpty()) {
-        for (Long imageId : request.deletedImages()) {
-            ProductImage productImage = productImageRepository.findById(imageId)
-                    .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 이미지를 찾을 수 없습니다: " + imageId));
-            productImageRepository.delete(productImage);
+        // 기존 이미지 삭제
+        Iterator<ProductImage> iterator = product.getImages().iterator();
+        while (iterator.hasNext()) {
+            ProductImage existingImage = iterator.next();
+            productImageRepository.delete(existingImage);
+            iterator.remove(); // Iterator를 사용하여 삭제
         }
-    }
 
-    // 새로운 이미지 추가
-    if (request.images() != null && !request.images().isEmpty()) {
-        for (MultipartFile file : request.images()) {
-            ProductImage productImage = new ProductImage();
-            productImage.setUploadFileName(file.getOriginalFilename());
-            productImage.setStoreFileName(productImageService.saveImage(file));
-            productImage.setProduct(product);
-            productImageRepository.save(productImage);
-            product.getImages().add(productImage);
+        // 새로운 이미지 추가
+        List<MultipartFile> files = request.images();
+        if (files != null && !files.isEmpty()) { // 이미지가 제공되었는지 확인
+            for (MultipartFile file : files) {
+                ProductImage productImage = new ProductImage();
+                productImage.setUploadFileName(file.getOriginalFilename());
+                productImage.setStoreFileName(productImageService.saveImage(file));
+                productImage.setProduct(product);
+                productImageRepository.save(productImage);
+                product.getImages().add(productImage);
+            }
         }
-    }
 
-    product.setUpdatedAt(LocalDateTime.now());
-    return productRepository.save(product);
-}
+        // 변경된 내용 저장
+        product.setUpdatedAt(LocalDateTime.now());
+        return productRepository.save(product);
+    }
 
     @Transactional
     public void deleteProductWithImages(Long productId) {
