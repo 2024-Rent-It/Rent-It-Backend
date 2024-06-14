@@ -41,7 +41,7 @@ public class Member {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "seller")
+    @OneToMany(mappedBy = "seller", cascade = CascadeType.REMOVE)
     private List<Product> sellingProducts;
 
     @OneToMany(mappedBy = "buyer")
@@ -52,6 +52,15 @@ public class Member {
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Token> tokens;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Favorite> favorites;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<KeywordNotification> keywordNotifications;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<PriceDropNotification> priceDropNotifications;
 
 
 
@@ -69,7 +78,8 @@ public class Member {
     }
 
     @Builder
-    private Member(String account, String password, String nickname, String email, String location, MemberType type) {
+    private Member(UUID id, String account, String password, String nickname, String email, String location, MemberType type) {
+        this.id = id;
         this.account = account;
         this.password = password;
         this.nickname = nickname;

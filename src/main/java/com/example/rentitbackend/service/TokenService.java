@@ -7,6 +7,7 @@ import com.example.rentitbackend.repository.MemberRepository;
 import com.example.rentitbackend.repository.TokenRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TokenService {
@@ -35,6 +36,7 @@ public class TokenService {
         return tokenRepository.save(token);
     }
 
+    @Transactional
     public void deleteTokenByMemberNickname(String nickname) {
         Member member = memberRepository.findByNickname(nickname)
                 .orElseThrow(() -> new EntityNotFoundException("해당 ID에 해당하는 회원을 찾을 수 없습니다: " + nickname));

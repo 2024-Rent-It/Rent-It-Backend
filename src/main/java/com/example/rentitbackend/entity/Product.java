@@ -3,9 +3,7 @@ package com.example.rentitbackend.entity;
 import com.example.rentitbackend.common.DealStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -15,8 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @NoArgsConstructor
+@AllArgsConstructor //추가
 @Getter
 @Setter
+@Builder //추가
 @Entity
 public class Product {
     @Id

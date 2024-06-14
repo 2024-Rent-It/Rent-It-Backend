@@ -151,16 +151,17 @@ public class ProductService {
         return productRepository.findAllOrderedByCreatedAtDesc();
     }
 
-    //    @Transactional
-//    public Page<Product> getAllProducts(Pageable pageable) {
-//        return productRepository.findAll(pageable);
-//    }
     @Transactional
     public List<Product> getProductsByLocation(String location) {
 
 //        return productRepository.findByLocation(location);
         return productRepository.findAllByLocationOrderByCreatedAtDesc(location);
     }
+
+    public List<Product> getProductsByLocationAndStatus(String location, DealStatus status) {
+        return productRepository.findByLocationAndStatusOrderByCreatedAtDesc(location, status);
+    }
+
 
     @Transactional
     public List<Product> getProductsByLocationAndCategory(String location, String category) {
@@ -169,12 +170,16 @@ public class ProductService {
 
     @Transactional
     public List<Product> getProductsBySeller(Member seller) {
-        return productRepository.findBySeller(seller);
+
+//        return productRepository.findBySeller(seller);
+        return productRepository.findBySellerOrderByCreatedAtDesc(seller);
     }
 
     @Transactional
     public List<Product> getProductsByBuyer(Member buyer) {
-        return productRepository.findByBuyer(buyer);
+
+//        return productRepository.findByBuyer(buyer);
+        return productRepository.findByBuyerOrderByCreatedAtDesc(buyer);
     }
 
     @Transactional

@@ -1,5 +1,6 @@
 package com.example.rentitbackend.controller;
 
+import com.example.rentitbackend.common.DealStatus;
 import com.example.rentitbackend.dto.product.request.ProductRegisterRequest;
 import com.example.rentitbackend.dto.product.request.ProductUpdateRequest;
 import com.example.rentitbackend.dto.product.request.RentProductRequest;
@@ -105,7 +106,8 @@ public class ProductController {
     @Operation(summary = "지역별 상품 목록 조회")
     @GetMapping("/location/{location}")
     public ResponseEntity<List<ProductListResponse>> getProductsByLocation(@PathVariable String location) {
-        List<Product> productList = productService.getProductsByLocation(location);
+//        List<Product> productList = productService.getProductsByLocation(location);
+        List<Product> productList = productService.getProductsByLocationAndStatus(location, DealStatus.렌트가능);
         return getListResponseEntity(productList);
     }
 
@@ -155,28 +157,6 @@ public class ProductController {
         return getListResponseEntity(productList);
     }
 
-    //    @Operation(summary = "판매자 상품 목록 조회")
-//    @GetMapping("/seller/{nickname}")
-//    public ResponseEntity<List<ProductListBySellerResponse>> getProductsBySeller(@PathVariable String nickname) {
-//        Member seller = memberService.findByNickname(nickname);
-//        List<Product> products = productService.getProductsBySeller(seller);
-//        List<ProductListBySellerResponse> productResponseList = products.stream().map(product -> {
-//            ProductListBySellerResponse response = new ProductListBySellerResponse(
-//                    product.getTitle(),
-//                    product.getCategory(),
-//                    product.getDuration(),
-//                    product.getPrice(),
-//                    product.getDescription(),
-//                    product.getImages().stream().map(ProductImage::getStoreFileName).collect(Collectors.toList()),
-//                    product.getSeller().getId(),
-//                    product.getSeller().getNickname(),
-//                    product.getLocation(),
-//                    product.getStatus()
-//            );
-//            return response;
-//        }).collect(Collectors.toList());
-//        return ResponseEntity.ok(productResponseList);
-//    }
     @Operation(summary = "판매자 상품 목록 조회(전체)")
     @GetMapping("/seller/{nickname}")
     public ResponseEntity<List<ProductListBySellerResponse>> getProductsBySeller(@PathVariable String nickname) {
