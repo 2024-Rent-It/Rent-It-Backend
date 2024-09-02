@@ -16,15 +16,8 @@ public record ProductListResponse(
         String duration,
         @Schema(description = "가격", example = "10000000")
         int price,
-//        @Schema(description = "설명", example = "한 달 써보고 새로 사보시는건 어떠신지~~ 상태 좋아요")
-//        String description,
         @Schema(description = "이미지", example = "1bfc370f-ab3c-42ec-bdb7-8c4a02f8b0d0_IMG_9235.PNG")
         List<String> productImages
-//        @Schema(description = "회원 고유키", example = "c0a00520-7abc-5b5b-8b0a-6b1c032f0e4a")
-//        UUID seller_id,
-//        @Schema(description = "판매자명", example = "하이")
-//        String sellerName,
-//        @Schema(description = "상품 등록 위치", example = "시흥시")
-//        String Location
+
 ) {
 }
